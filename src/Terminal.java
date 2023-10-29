@@ -1,5 +1,7 @@
 import java.nio.file.*;//Contain Paths, Files which is helpful for filesystem manipulation.
 import java.util.*;//contain DataStructures
+import java.io.IOException;
+import java.util.stream.Stream;
 
 
 class Parser {
@@ -75,10 +77,39 @@ public class Terminal {
                 System.out.println("Command not recognized.");
         }
     }
-    public void echoCommand(String[] args) {}
-    public void pwdCommand() {}
-    public void changeDirectoryCommand(String[] args) {}
-    public void listDirectoryCommand(String[] args) {}
+    public void echoCommand(String[] args) {
+        for (String arg : args) {
+            System.out.print(arg + " ");
+        }
+        System.out.println();
+    }
+    public void pwdCommand() {
+        System.out.println(currentDirectory.toAbsolutePath());
+    }
+    public void changeDirectoryCommand(String[] args) {
+        if (args.length == 1) {
+            String newDirectoryPath = args[0];
+            Path newDirectory = currentDirectory.resolve(newDirectoryPath);
+
+            if (Files.exists(newDirectory) && Files.isDirectory(newDirectory)) {
+                currentDirectory = newDirectory.toAbsolutePath();
+            } else {
+                System.out.println("Directory does not exist: " + newDirectory);
+            }
+        } else {
+            System.out.println("Usage: cd <directory>");
+        }
+    }
+    public void listDirectoryCommand(String[] args) {
+        try {
+            // Use Files.list to obtain a stream of entries (files and subdirectories) in the current directory.
+            try (Stream<Path> entries = Files.list(currentDirectory)) {
+                entries.forEach(entry -> System.out.println(entry.getFileName()));
+            }
+        } catch (IOException e) {
+            System.err.println("Error listing directory: " + e.getMessage());
+        }
+    }
     public void listDirectoryReverse() {}
     public void makeDirectory(String[] args) {}
     public void removeDirectory(String[] args){}
