@@ -87,19 +87,33 @@ public class Terminal {
         System.out.println(currentDirectory.toAbsolutePath());
     }
     public void changeDirectoryCommand(String[] args) {
-        if (args.length == 1) {
+        if (args.length == 0) {
+            // change to the home directory
+            currentDirectory = Paths.get(System.getProperty("user.home"));
+        } else if (args.length == 1) {
             String newDirectoryPath = args[0];
-            Path newDirectory = currentDirectory.resolve(newDirectoryPath);
-
-            if (Files.exists(newDirectory) && Files.isDirectory(newDirectory)) {
-                currentDirectory = newDirectory.toAbsolutePath();
+            if (newDirectoryPath.equals("..")) {
+                //Change to the previous directory
+                if (currentDirectory.getParent() != null) {
+                    currentDirectory = currentDirectory.getParent();
+                } else {
+                    System.out.println("Already in the root directory.");
+                }
             } else {
-                System.out.println("Directory does not exist: " + newDirectory);
+                //Change to the specified path
+                Path newDirectory = currentDirectory.resolve(newDirectoryPath);
+
+                if (Files.exists(newDirectory) && Files.isDirectory(newDirectory)) {
+                    currentDirectory = newDirectory.toAbsolutePath();
+                } else {
+                    System.out.println("Directory does not exist: " + newDirectory);
+                }
             }
         } else {
-            System.out.println("Usage: cd <directory>");
+            System.out.println("Usage: cd [<directory>|..]");
         }
     }
+
     public void listDirectoryCommand(String[] args) {
         try {
             // Use Files.list to obtain a stream of entries (files and subdirectories) in the current directory.
