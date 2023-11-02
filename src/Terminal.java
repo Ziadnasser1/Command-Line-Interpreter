@@ -136,7 +136,26 @@ public class Terminal {
             System.err.println("Error listing directory: " + e.getMessage());
         }
     }
-    public void makeDirectory(String[] args) {}
+    public void makeDirectory(String[] args) {
+        if (args.length == 0) {
+            System.err.println("No arguments provided");
+        } else {
+            for (String arg : args) {
+                Path newPath;
+                if (Paths.get(arg).isAbsolute()) {
+                    newPath = Paths.get(arg);
+                } else {
+                    newPath = currentDirectory.resolve(arg);
+                }
+
+                try {
+                    Files.createDirectories(newPath);
+                } catch (IOException e) {
+                    System.err.println("Error making directory: " + e.getMessage());
+                }
+            }
+        }
+    }
     public void removeDirectory(String[] args){}
     public void createFile(String[] args) {}
     public void copyFile(String[] args) {}
