@@ -113,7 +113,6 @@ public class Terminal {
             System.out.println("Usage: cd [<directory>|..]");
         }
     }
-
     public void listDirectoryCommand(String[] args) {
         try {
             // Use Files.list to obtain a stream of entries (files and subdirectories) in the current directory.
@@ -124,7 +123,19 @@ public class Terminal {
             System.err.println("Error listing directory: " + e.getMessage());
         }
     }
-    public void listDirectoryReverse() {}
+    public void listDirectoryReverse() {
+        try {
+            // Use Files.list to obtain a stream of entries (files and subdirectories) in the current directory.
+            try (Stream<Path> entries = Files.list(currentDirectory)) {
+                ArrayList<Path> ls_r = new ArrayList<>();
+                entries.forEach(ls_r::add);
+                Collections.reverse(ls_r);
+                ls_r.forEach(entry -> System.out.println(entry.getFileName()));
+            }
+        } catch (IOException e) {
+            System.err.println("Error listing directory: " + e.getMessage());
+        }
+    }
     public void makeDirectory(String[] args) {}
     public void removeDirectory(String[] args){}
     public void createFile(String[] args) {}
