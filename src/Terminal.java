@@ -1,7 +1,12 @@
-import java.nio.file.*;//Contain Paths, Files which is helpful for filesystem manipulation.
+import java.io.File;
 import java.util.*;//contain DataStructures
 import java.io.IOException;
 import java.util.stream.Stream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.*;
 
 //testBranch
 
@@ -31,6 +36,7 @@ class Parser {
 public class Terminal {
     Parser parser;
     Path currentDirectory = Paths.get(System.getProperty("user.dir"));//gets the current working directory as a Path object.
+
     public void chooseCommandAction(String command, String[] args) {
         switch (command) {
             case "echo":
@@ -48,27 +54,28 @@ public class Terminal {
             case "ls -r":
                 listDirectoryReverse();
                 break;
-            case"mkdir":
+            case "mkdir":
                 makeDirectory(args);
                 break;
-            case"rmkdir":
+            case "rmdir":
                 removeDirectory(args);
                 break;
-            case"touch":
+            case "touch":
                 createFile(args);
                 break;
-            case"cp":
+            case "cp":
                 copyFile(args);
                 break;
-            case"cp -r":
+            case "cp-r":
+                cpDirectory(args);
                 break;
-            case"rm":
+            case "rm":
                 removeFile(args);
                 break;
-            case"cat":
+            case "cat":
                 concatenateFiles(args);
                 break;
-            case"wc":
+            case "wc":
                 wordCount(args);
                 break;
             case "exit":
@@ -78,15 +85,18 @@ public class Terminal {
                 System.out.println("Command not recognized.");
         }
     }
+
     public void echoCommand(String[] args) {
         for (String arg : args) {
             System.out.print(arg + " ");
         }
         System.out.println();
     }
+
     public void pwdCommand() {
         System.out.println(currentDirectory.toAbsolutePath());
     }
+
     public void changeDirectoryCommand(String[] args) {
         if (args.length == 0) {
             // change to the home directory
@@ -114,6 +124,7 @@ public class Terminal {
             System.out.println("Usage: cd [<directory>|..]");
         }
     }
+
     public void listDirectoryCommand(String[] args) {
         try {
             // Use Files.list to obtain a stream of entries (files and subdirectories) in the current directory.
@@ -124,6 +135,7 @@ public class Terminal {
             System.err.println("Error listing directory: " + e.getMessage());
         }
     }
+
     public void listDirectoryReverse() {
         try {
             // Use Files.list to obtain a stream of entries (files and subdirectories) in the current directory.
@@ -137,6 +149,7 @@ public class Terminal {
             System.err.println("Error listing directory: " + e.getMessage());
         }
     }
+
     public void makeDirectory(String[] args) {
         if (args.length == 0) {
             System.err.println("No arguments provided");
@@ -157,9 +170,138 @@ public class Terminal {
             }
         }
     }
-    public void removeDirectory(String[] args){}
-    public void createFile(String[] args) {}
-    public void copyFile(String[] args) {}
+
+    public void removeDirectory(String[] args) {
+        String path = currentDirectory.toAbsolutePath().toString();
+        if (args[0].equals("*")) {
+            File CD = new File(path);
+            removeEmptyDirectories(CD);
+        }
+        else {
+            for (int i = 0; i < args.length; i++) {
+                String directoryPath = args[i];
+                File directory = new File(directoryPath);
+                if (!directory.exists()) {
+                    System.err.println("Directory does not exist: " + directoryPath);// Return an error code
+                }
+
+                if (!directory.isDirectory()) {
+                    System.err.println("Not a directory: " + directoryPath);// Return an error code
+                }
+
+                if (isDirectoryEmpty(directory)) {
+                    if (!directory.delete()) {
+                        System.err.println("Failed to remove directory: " + directoryPath);
+
+                    }
+                } else {
+                    System.err.println("Failed to remove: Directory not empty");
+
+                }
+            }
+
+        }
+    }
+    public static void removeEmptyDirectories(File directory) {
+        if (directory.isDirectory()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    removeEmptyDirectories(file);
+                }
+            }
+            if (directory.list().length == 0) {
+                directory.delete();
+            }
+        }
+    }
+
+    private static boolean isDirectoryEmpty(File directory) {
+        if (directory.isDirectory()) {
+            String[] files = directory.list();
+            return files == null || files.length == 0;
+        }
+        return false;
+    }
+
+    public void createFile(String[] args) {
+        if (args.length == 0) {
+            System.err.println("No arguments provided");
+        } else {
+            for (String arg : args) {
+                Path newPath;
+                if (Paths.get(arg).isAbsolute()) {
+                    newPath = Paths.get(arg);
+                } else {
+                    newPath = currentDirectory.resolve(arg);
+                }
+
+                try {
+                    Files.createFile(newPath);
+                } catch (IOException e) {
+                    System.err.println("Error making file: " + e.getMessage());
+                }
+            }
+        }
+    }
+    public void copyFile(String[] args) {
+        if (args.length == 0) {
+            System.err.println("No arguments provided");
+        } else if(args.length == 2) {
+                Path firstPath;
+                Path secondPath;
+                if (Paths.get(args[1]).isAbsolute()) {
+                    secondPath = Paths.get(args[1]);
+                } else {
+                    secondPath = currentDirectory.resolve(args[1]);
+                }
+                if (Paths.get(args[0]).isAbsolute()) {
+                    firstPath = Paths.get(args[0]);
+                } else {
+                    firstPath = currentDirectory.resolve(args[0]);
+                }
+
+                try {
+                    Files.copy(firstPath, secondPath);
+                } catch (IOException e) {
+                    System.err.println("Error copying file: " + e.getMessage());
+                }
+            }
+        }
+
+    public void cpDirectory(String[] args) {
+        if (args.length != 2) {
+            System.err.println("Usage: cp -r <source_directory> <destination_directory>");
+            System.exit(1);
+        }else{
+            Path firstPath = Paths.get(args[0]);
+            Path secondPath = Paths.get(args[1]);
+
+            try {
+                copyDirectory(firstPath, secondPath);
+                System.out.println("Directory copied from " + firstPath + " to " + secondPath);
+            } catch (IOException e) {
+                System.err.println("Error copying directory: " + e.getMessage());
+            }
+        }
+
+    }
+    public void copyDirectory(Path source, Path destination) throws IOException {
+        Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                Path targetDir = destination.resolve(source.relativize(dir));
+                Files.createDirectories(targetDir);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.copy(file, destination.resolve(source.relativize(file)), StandardCopyOption.REPLACE_EXISTING);
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
     public void removeFile(String[] args) {}
     public void concatenateFiles(String[] args) {}
     public void wordCount(String[] args){}
