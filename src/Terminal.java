@@ -94,8 +94,9 @@ public class Terminal {
                     } else {
                         System.out.println("One argument is provided with the 'touch' command!");
                     }
+                    break;
                 }
-                break;
+
                 case "cp": {
                     if (args.length == 2 && !Objects.equals(args[0], "-r")) {
                         copyFile(args);
@@ -252,7 +253,6 @@ public class Terminal {
                         .sorted(Comparator.reverseOrder())
                         .map(Path::toFile)
                         .forEach(File::delete);
-                System.out.println("Directory deleted: " + directory);
                 commandHistory.add("rmdir");
             } catch (IOException e) {
                 System.err.println("Failed to remove directory: " + e.getMessage());
@@ -295,7 +295,7 @@ public class Terminal {
         }
 
         try {
-            Files.copy(firstPath, secondPath);
+            Files.copy(firstPath, secondPath, StandardCopyOption.REPLACE_EXISTING);
             commandHistory.add("cp");
         } catch (IOException e) {
             System.err.println("Error copying file: " + e.getMessage());
@@ -304,22 +304,14 @@ public class Terminal {
 
 
     public void cpDirectory(String[] args) {
-        if (args.length != 2) {
-            System.err.println("Usage: cp -r <source_directory> <destination_directory>");
-            System.exit(1);
-        } else {
-            Path firstPath = Paths.get(args[0]);
-            Path secondPath = Paths.get(args[1]);
-
-            try {
-                copyDirectory(firstPath, secondPath);
-                System.out.println("Directory copied from " + firstPath + " to " + secondPath);
-                commandHistory.add("cp -r");
-            } catch (IOException e) {
-                System.err.println("Error copying directory: " + e.getMessage());
-            }
+        Path firstPath = Paths.get(args[1]);
+        Path secondPath = Paths.get(args[2]);
+        try {
+            copyDirectory(firstPath, secondPath);
+            commandHistory.add("cp -r");
+        } catch (IOException e) {
+            System.err.println("Error copying directory: " + e.getMessage());
         }
-
     }
 
 
@@ -342,24 +334,18 @@ public class Terminal {
 
 
     public void removeFile(String[] args) {
-        if (args.length == 1) {
-            try {
-                Path fileToDelete = Paths.get(currentDirectory.toString(), args[0]);
-                if (Files.exists(fileToDelete) && Files.isRegularFile(fileToDelete)) {
-                    Files.delete(fileToDelete);
-                    System.out.println("File deleted: " + fileToDelete);
-                    commandHistory.add("rm");
-                } else {
-                    System.out.println("File does not exist or is not a regular file.");
-                }
-            } catch (IOException e) {
-                System.out.println("Error deleting file: " + e.getMessage());
+        try {
+            Path fileToDelete = Paths.get(currentDirectory.toString(), args[0]);
+            if (Files.exists(fileToDelete) && Files.isRegularFile(fileToDelete)) {
+                Files.delete(fileToDelete);
+                commandHistory.add("rm");
+            } else {
+                System.out.println("File does not exist or is not a regular file.");
             }
-        } else {
-            System.out.println("Invalid arguments for rm.");
+        } catch (IOException e) {
+            System.out.println("Error deleting file: " + e.getMessage());
         }
     }
-
 
     public void wordCount(String[] args) {
         if (args.length == 1) {
