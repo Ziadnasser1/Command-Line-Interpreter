@@ -36,77 +36,131 @@ class Parser {
 public class Terminal {
     Parser parser;
     Path currentDirectory = Paths.get(System.getProperty("user.dir"));//gets the current working directory as a Path object.
+    private List<String> commandHistory = new ArrayList<>();
 
     public void chooseCommandAction(String command, String[] args) {
-        switch (command) {
-            case "echo":
-                echoCommand(args);
-                break;
-            case "pwd":
-                pwdCommand();
-                break;
-            case "cd":
-                changeDirectoryCommand(args);
-                break;
-            case "ls":
-                listDirectoryCommand(args);
-                break;
-            case "ls -r":
-                listDirectoryReverse();
-                break;
-            case "mkdir":
-                makeDirectory(args);
-                break;
-            case "rmdir":
-                removeDirectory(args);
-                break;
-            case "touch":
-                createFile(args);
-                break;
-            case "cp":
-                copyFile(args);
-                break;
-            case "cp-r":
-                cpDirectory(args);
-                break;
-            case "rm":
-                removeFile(args);
-                break;
-            case "cat":
-                concatenateFiles(args);
-                break;
-            case "wc":
-                wordCount(args);
-                break;
-            case "exit":
-                exitCommand();
-                break;
-            default:
-                System.out.println("Command not recognized.");
+        if(command.equals("history")){
+            printCommandHistory();
+        }else{
+            switch (command) {
+                case "echo": {
+                    if (args.length == 0) {
+                        System.out.println("You should use an argument to print with echo command!");
+                    } else {
+                        echoCommand(args);
+                    }
+                    break;
+                }
+                case "pwd": {
+                    if(args.length!=0) {
+                        System.out.println("You should not provide any arguments with pwd command!");
+                    }else {
+                        pwdCommand(args);
+                    }
+                    break;
+                }
+                case "cd":
+                    changeDirectoryCommand(args);
+                    break;
+                case "ls":{
+                    if(args.length == 0){
+                        listDirectoryCommand();
+                    }else if(args.length == 1 && Objects.equals(args[0], "-r")){
+                        listDirectoryReverse();
+                    }else{
+                        System.out.println("invalid argument!");
+                    }
+                    break;
+                }
+                case "mkdir": {
+                    if (args.length == 0) {
+                        System.out.println("You should provide an argument or more for 'mkdir' command!");
+                    } else {
+                        makeDirectory(args);
+                    }
+                    break;
+                }
+                case "rmdir": {
+                    if (args.length == 1) {
+                        removeDirectory(args);
+                    }else{
+                        System.out.println("One argument is provided with the 'rmdir' command!");
+                    }
+                    break;
+                }
+                case "touch":{
+                    if (args.length == 1){
+                        createFile(args);
+                    }else{
+                        System.out.println("One argument is provided with the 'touch' command!");
+                    }
+                }
+                    break;
+                case "ncp":{
+                    if(args.length == 2 && !Objects.equals(args[0], "-r")){
+                        copyFile(args);
+                    }else if(args.length == 3 && Objects.equals(args[0], "-r")){
+                        cpDirectory(args);
+                    }else{
+                        System.out.println("invalid argument!");
+                    }
+                    break;
+                }
+                case "rm":
+                    if(args.length == 1){
+                        removeFile(args);
+                    }else{
+                        System.out.println("One argument is provided with the 'rm' command");
+                    }
+                    break;
+                case "wc":
+                    if(args.length == 1){
+                        wordCount(args);
+                    }else{
+                        System.out.println("One argument is provided with the 'wc' command");
+                    }
+                    break;
+                case "exit":
+                    exitCommand();
+                    break;
+                default:
+                    System.out.println("Command not recognized.");
+            }
+        }
+
+    }
+    public void printCommandHistory() {
+        for (int i = 0; i < commandHistory.size(); i++) {
+            System.out.println((i + 1) + " " + commandHistory.get(i));
         }
     }
 
     public void echoCommand(String[] args) {
-        for (String arg : args) {
-            System.out.print(arg + " ");
-        }
-        System.out.println();
+       for (String arg : args) {
+                System.out.print(arg + " ");
+       }
+       System.out.println();
+       commandHistory.add("echo");
     }
 
-    public void pwdCommand() {
+    public void pwdCommand(String[] args) {
         System.out.println(currentDirectory.toAbsolutePath());
+        commandHistory.add("pwd");
+
     }
 
     public void changeDirectoryCommand(String[] args) {
         if (args.length == 0) {
             // change to the home directory
             currentDirectory = Paths.get(System.getProperty("user.home"));
+            commandHistory.add("cd");
         } else if (args.length == 1) {
             String newDirectoryPath = args[0];
             if (newDirectoryPath.equals("..")) {
                 //Change to the previous directory
                 if (currentDirectory.getParent() != null) {
                     currentDirectory = currentDirectory.getParent();
+                    commandHistory.add("cd ..");
                 } else {
                     System.out.println("Already in the root directory.");
                 }
@@ -116,6 +170,7 @@ public class Terminal {
 
                 if (Files.exists(newDirectory) && Files.isDirectory(newDirectory)) {
                     currentDirectory = newDirectory.toAbsolutePath();
+                    commandHistory.add("cd "+ newDirectoryPath);
                 } else {
                     System.out.println("Directory does not exist: " + newDirectory);
                 }
@@ -125,11 +180,12 @@ public class Terminal {
         }
     }
 
-    public void listDirectoryCommand(String[] args) {
+    public void listDirectoryCommand() {
         try {
             // Use Files.list to obtain a stream of entries (files and subdirectories) in the current directory.
             try (Stream<Path> entries = Files.list(currentDirectory)) {
                 entries.forEach(entry -> System.out.println(entry.getFileName()));
+                commandHistory.add("ls");
             }
         } catch (IOException e) {
             System.err.println("Error listing directory: " + e.getMessage());
@@ -144,6 +200,7 @@ public class Terminal {
                 entries.forEach(ls_r::add);
                 Collections.reverse(ls_r);
                 ls_r.forEach(entry -> System.out.println(entry.getFileName()));
+                commandHistory.add("ls -r");
             }
         } catch (IOException e) {
             System.err.println("Error listing directory: " + e.getMessage());
@@ -151,10 +208,7 @@ public class Terminal {
     }
 
     public void makeDirectory(String[] args) {
-        if (args.length == 0) {
-            System.err.println("No arguments provided");
-        } else {
-            for (String arg : args) {
+        for (String arg : args) {
                 Path newPath;
                 if (Paths.get(arg).isAbsolute()) {
                     newPath = Paths.get(arg);
@@ -164,11 +218,11 @@ public class Terminal {
 
                 try {
                     Files.createDirectories(newPath);
+                    commandHistory.add("mkdir");
                 } catch (IOException e) {
                     System.err.println("Error making directory: " + e.getMessage());
                 }
             }
-        }
     }
 
     public void removeDirectory(String[] args) {
@@ -176,6 +230,7 @@ public class Terminal {
         if (args[0].equals("*")) {
             File CD = new File(path);
             removeEmptyDirectories(CD);
+            commandHistory.add("rmdir *");
         }
         else {
             for (int i = 0; i < args.length; i++) {
@@ -225,10 +280,7 @@ public class Terminal {
     }
 
     public void createFile(String[] args) {
-        if (args.length == 0) {
-            System.err.println("No arguments provided");
-        } else {
-            for (String arg : args) {
+        for (String arg : args) {
                 Path newPath;
                 if (Paths.get(arg).isAbsolute()) {
                     newPath = Paths.get(arg);
@@ -238,36 +290,33 @@ public class Terminal {
 
                 try {
                     Files.createFile(newPath);
+                    commandHistory.add("touch");
                 } catch (IOException e) {
                     System.err.println("Error making file: " + e.getMessage());
                 }
-            }
         }
     }
     public void copyFile(String[] args) {
-        if (args.length == 0) {
-            System.err.println("No arguments provided");
-        } else if(args.length == 2) {
-                Path firstPath;
-                Path secondPath;
-                if (Paths.get(args[1]).isAbsolute()) {
-                    secondPath = Paths.get(args[1]);
-                } else {
-                    secondPath = currentDirectory.resolve(args[1]);
-                }
-                if (Paths.get(args[0]).isAbsolute()) {
-                    firstPath = Paths.get(args[0]);
-                } else {
-                    firstPath = currentDirectory.resolve(args[0]);
-                }
-
-                try {
-                    Files.copy(firstPath, secondPath);
-                } catch (IOException e) {
-                    System.err.println("Error copying file: " + e.getMessage());
-                }
+        Path firstPath;
+            Path secondPath;
+            if (Paths.get(args[1]).isAbsolute()) {
+                secondPath = Paths.get(args[1]);
+            } else {
+                secondPath = currentDirectory.resolve(args[1]);
             }
+            if (Paths.get(args[0]).isAbsolute()) {
+                firstPath = Paths.get(args[0]);
+            } else {
+                firstPath = currentDirectory.resolve(args[0]);
+            }
+
+            try {
+                Files.copy(firstPath, secondPath);
+                commandHistory.add("cp");
+            } catch (IOException e) {
+                System.err.println("Error copying file: " + e.getMessage());
         }
+    }
 
     public void cpDirectory(String[] args) {
         if (args.length != 2) {
@@ -280,6 +329,7 @@ public class Terminal {
             try {
                 copyDirectory(firstPath, secondPath);
                 System.out.println("Directory copied from " + firstPath + " to " + secondPath);
+                commandHistory.add("cp -r");
             } catch (IOException e) {
                 System.err.println("Error copying directory: " + e.getMessage());
             }
@@ -302,9 +352,49 @@ public class Terminal {
             }
         });
     }
-    public void removeFile(String[] args) {}
-    public void concatenateFiles(String[] args) {}
-    public void wordCount(String[] args){}
+    public void removeFile(String[] args) {
+        if (args.length == 1) {
+            try {
+                Path fileToDelete = Paths.get(currentDirectory.toString(), args[0]);
+                if (Files.exists(fileToDelete) && Files.isRegularFile(fileToDelete)) {
+                    Files.delete(fileToDelete);
+                    System.out.println("File deleted: " + fileToDelete);
+                    commandHistory.add("rm");
+                } else {
+                    System.out.println("File does not exist or is not a regular file.");
+                }
+            } catch (IOException e) {
+                System.out.println("Error deleting file: " + e.getMessage());
+            }
+        } else {
+            System.out.println("Invalid arguments for rm.");
+        }
+    }
+    public void wordCount(String[] args) {
+        if (args.length == 1) {
+            try {
+                Path file = Paths.get(currentDirectory.toString(), args[0]);
+                if (Files.exists(file) && Files.isRegularFile(file)) {
+                    long LC = Files.lines(file).count();
+                    long WC = Files.lines(file)
+                            .flatMap(line -> Arrays.stream(line.split("\\s+")))
+                            .filter(word -> !word.isEmpty())
+                            .count();
+                    long CC = Files.size(file);
+
+                    System.out.println(LC + " " + WC + " " + CC + " " + file.getFileName());
+                    commandHistory.add("wc");
+                } else {
+                    System.out.println("File does not exist or is not a regular file.");
+                }
+            } catch (IOException e) {
+                System.out.println("Error counting : " + e.getMessage());
+            }
+        } else {
+            System.out.println("Invalid arguments for wc.");
+        }
+    }
+
 
     public void exitCommand() {
         System.exit(0);
@@ -312,7 +402,8 @@ public class Terminal {
 
 
     public static void main(String[] args) {
-        Terminal terminal = new Terminal();
+        Terminal terminal = new
+                Terminal();
         Scanner scanner = new Scanner(System.in);
         terminal.parser = new Parser();
 
