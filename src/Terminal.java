@@ -23,11 +23,9 @@ class Parser {
         }
         return false;
     }
-
     public String getCommandName() {
         return commandName;
     }
-
     public String[] getArgs() {
         return args;
     }
@@ -129,15 +127,11 @@ public class Terminal {
             }
         }
     }
-
-
     public void printCommandHistory() {
         for (int i = 0; i < commandHistory.size(); i++) {
             System.out.println((i + 1) + " " + commandHistory.get(i));
         }
     }
-
-
     public void echoCommand(String[] args) {
         for (String arg : args) {
             System.out.print(arg + " ");
@@ -145,15 +139,11 @@ public class Terminal {
         System.out.println();
         commandHistory.add("echo");
     }
-
-
     public void pwdCommand(String[] args) {
         System.out.println(currentDirectory.toAbsolutePath());
         commandHistory.add("pwd");
 
     }
-
-
     public void changeDirectoryCommand(String[] args) {
         if (args.length == 0) {
             // change to the home directory
@@ -184,8 +174,6 @@ public class Terminal {
             System.out.println("Usage: cd [<directory>|..]");
         }
     }
-
-
     public void listDirectoryCommand() {
         try {
             // Use Files.list to obtain a stream of entries (files and subdirectories) in the current directory.
@@ -197,8 +185,6 @@ public class Terminal {
             System.err.println("Error listing directory: " + e.getMessage());
         }
     }
-
-
     public void listDirectoryReverse() {
         try {
             // Use Files.list to obtain a stream of entries (files and subdirectories) in the current directory.
@@ -213,8 +199,6 @@ public class Terminal {
             System.err.println("Error listing directory: " + e.getMessage());
         }
     }
-
-
     public void makeDirectory(String[] args) {
         for (String arg : args) {
             Path newPath;
@@ -232,35 +216,50 @@ public class Terminal {
             }
         }
     }
-
-
     public void removeDirectory(String[] args) {
-        for (String directoryPath : args) {
-            Path directory = currentDirectory.resolve(directoryPath);
+        if (args[0].equals("*")) {
+            String path = currentDirectory.toAbsolutePath().toString();
+            File CD = new File(path);
+            removeEmptyDirectories(CD);
+        } else{
+            for (String directoryPath : args) {
+                Path directory = currentDirectory.resolve(directoryPath);
 
-            if (!Files.exists(directory)) {
-                System.err.println("Directory does not exist: " + directory);
-                continue;
-            }
+                if (!Files.exists(directory)) {
+                    System.err.println("Directory does not exist: " + directory);
+                    continue;
+                }
 
-            if (!Files.isDirectory(directory)) {
-                System.err.println("Not a directory: " + directory);
-                continue;
-            }
+                if (!Files.isDirectory(directory)) {
+                    System.err.println("Not a directory: " + directory);
+                    continue;
+                }
 
-            try {
-                Files.walk(directory)
-                        .sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .forEach(File::delete);
-                commandHistory.add("rmdir");
-            } catch (IOException e) {
-                System.err.println("Failed to remove directory: " + e.getMessage());
+                try {
+                    Files.walk(directory)
+                            .sorted(Comparator.reverseOrder())
+                            .map(Path::toFile)
+                            .forEach(File::delete);
+                    commandHistory.add("rmdir");
+                } catch (IOException e) {
+                    System.err.println("Failed to remove directory: " + e.getMessage());
+                }
             }
         }
     }
-
-
+    public static void removeEmptyDirectories(File directory) {
+        if (directory.isDirectory()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    removeEmptyDirectories(file);
+                }
+            }
+            if (directory.list().length == 0) {
+                directory.delete();
+            }
+        }
+    }
     public void createFile(String[] args) {
         for (String arg : args) {
             Path newPath;
@@ -278,8 +277,6 @@ public class Terminal {
             }
         }
     }
-
-
     public void copyFile(String[] args) {
         Path firstPath;
         Path secondPath;
@@ -301,8 +298,6 @@ public class Terminal {
             System.err.println("Error copying file: " + e.getMessage());
         }
     }
-
-
     public void cpDirectory(String[] args) {
         Path firstPath = Paths.get(args[1]);
         Path secondPath = Paths.get(args[2]);
@@ -313,8 +308,6 @@ public class Terminal {
             System.err.println("Error copying directory: " + e.getMessage());
         }
     }
-
-
     public void copyDirectory(Path source, Path destination) throws IOException {
         Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
             @Override
@@ -331,8 +324,6 @@ public class Terminal {
             }
         });
     }
-
-
     public void removeFile(String[] args) {
         try {
             Path fileToDelete = Paths.get(currentDirectory.toString(), args[0]);
@@ -346,7 +337,6 @@ public class Terminal {
             System.out.println("Error deleting file: " + e.getMessage());
         }
     }
-
     public void wordCount(String[] args) {
         if (args.length == 1) {
             try {
@@ -371,13 +361,9 @@ public class Terminal {
             System.out.println("Invalid arguments for wc.");
         }
     }
-
-
     public void exitCommand() {
         System.exit(0);
     }
-
-
     public static void main(String[] args) {
         Terminal terminal = new
                 Terminal();
